@@ -17,7 +17,30 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.rooms.size }));
 
 // STUN works for most home networks; a TURN server is needed for strict NATs / mobile data.
-app.get('/api/ice', (_req, res) => {
+// Metered.ca provides free TURN with dynamic credentials via their API.
+let cachedIce = null;
+let cachedAt = 0;
+const ICE_TTL = 10 * 60 * 1000; // refresh every 10 minutes
+
+app.get('/api/ice', async (_req, res) => {
+  const domain = process.env.METERED_DOMAIN;
+  const key = process.env.METERED_SECRET_KEY;
+  if (domain && key) {
+    if (!cachedIce || Date.now() - cachedAt > ICE_TTL) {
+      try {
+        const url = `https://${domain}/api/v1/turn/credentials?apiKey=${key}`;
+        const r = await fetch(url);
+        if (r.ok) {
+          cachedIce = await r.json();
+          cachedAt = Date.now();
+        }
+      } catch (e) {
+        console.error('Failed to fetch TURN credentials:', e.message);
+      }
+    }
+    if (cachedIce) return res.json({ iceServers: cachedIce });
+  }
+  // Fallback: static TURN config or STUN-only.
   const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
   if (process.env.TURN_URL) {
     iceServers.push({

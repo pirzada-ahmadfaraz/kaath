@@ -8,9 +8,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: TURN_URL
+      - key: METERED_DOMAIN
         sync: false
-      - key: TURN_USERNAME
-        sync: false
-      - key: TURN_CREDENTIAL
+      - key: METERED_SECRET_KEY
         sync: false
