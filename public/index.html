@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Court Piece — Play Rang online with friends</title>
+  <meta name="description" content="Play Court Piece (Rang) with friends online, face to face with live video and voice. No downloads, no sign-up.">
+  <meta name="theme-color" content="#06120d">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ================= LANDING ================= -->
+  <section id="home" class="screen">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="brand-mark">♠</span>Court Piece</a>
+      <div class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#rules">Rules</a>
+        <a href="#play" class="nav-cta">Play now</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Rang · Coat Pees · Hokm</span>
+        <h1>The table is set.<br><em>Call the rang.</em></h1>
+        <p class="lede">Play Court Piece with your friends, face to face, with live video and voice. No downloads and no sign-up. Share a code and deal.</p>
+
+        <form id="play" class="play-card" autocomplete="off">
+          <label class="field-label" for="name">Your name</label>
+          <input id="name" maxlength="20" placeholder="e.g. Ahmad" autocomplete="nickname">
+          <button id="create" type="button" class="btn btn-gold btn-lg">Create a table</button>
+          <div class="divider"><span>or join with a code</span></div>
+          <div class="join-row">
+            <input id="code" maxlength="5" placeholder="CODE" autocapitalize="characters" spellcheck="false" aria-label="Table code">
+            <button id="join" type="button" class="btn btn-ghost">Join</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-glow"></div>
+        <div class="hero-fan" data-cards="AS KH QC JD AH"></div>
+        <div class="chip-stack c1"></div>
+        <div class="chip-stack c2"></div>
+      </div>
+    </header>
+
+    <section id="how" class="section">
+      <h2 class="section-title">Game night, without the travel</h2>
+      <div class="features">
+        <article class="feature">
+          <div class="feature-icon">🎥</div>
+          <h3>Live video & voice</h3>
+          <p>Everyone's camera sits at their seat around the table. Talk, tease and argue about that last trick like you're in the same room.</p>
+        </article>
+        <article class="feature">
+          <div class="feature-icon">🤝</div>
+          <h3>Pick your partner</h3>
+          <p>Choose your seat to choose your team. The host decides who picks the rang, and bots fill any empty chairs.</p>
+        </article>
+        <article class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Fair & instant</h3>
+          <p>The server deals and enforces every rule, so nobody can peek or cheat. Dropped connection? Your seat waits for you.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="rules" class="section rules">
+      <div class="rules-copy">
+        <h2 class="section-title left">Learn it in a minute</h2>
+        <ol class="steps">
+          <li><b>Four players, two teams.</b> Your partner sits opposite you.</li>
+          <li><b>Call the rang.</b> One player gets 5 cards first and chooses any suit (hearts, spades, diamonds or clubs) as the trump.</li>
+          <li><b>Deal the rest.</b> Everyone ends up with 13 cards.</li>
+          <li><b>Follow suit.</b> If you can't, play any card. A rang card beats everything else.</li>
+          <li><b>Win 7 tricks</b> to take the hand. Win the first 7 in a row and it's a <span class="gold">Court</span>, worth triple.</li>
+        </ol>
+      </div>
+      <div class="demo" aria-label="Example trick">
+        <div class="demo-head">Rang is <span class="demo-rang">♠</span></div>
+        <div class="demo-trick" data-cards="AH 2H 3H 2S"></div>
+        <p class="demo-caption">Three hearts are led. The 4th player has no hearts, plays the <b>2♠</b> and wins the trick, even over the Ace.</p>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <h2>Ready to deal?</h2>
+      <a href="#play" class="btn btn-gold btn-lg">Create a table</a>
+    </section>
+
+    <footer class="footer">♠ ♥ ♣ ♦ · Court Piece · made for game night</footer>
+  </section>
+
+  <!-- ================= ROOM ================= -->
+  <section id="room" class="screen hidden">
+    <header class="topbar">
+      <div class="tb-left">
+        <span class="brand small"><span class="brand-mark">♠</span><span class="brand-text">Court Piece</span></span>
+        <button id="copy" class="code-chip" title="Copy invite link"><span class="code-label">Table</span><b id="room-code"></b><svg viewBox="0 0 24 24"><path d="M8 8h11v13H8zM5 3h11v3H7v11H5z"/></svg></button>
+      </div>
+      <div class="tb-center">
+        <div class="team-pill us"><span class="lbl">Us</span><b id="score-us">0</b><div class="pips" id="pips-us"></div></div>
+        <div id="rang" class="rang-chip empty" title="Rang (trump)"><span class="rang-sym">?</span><span class="rang-lbl">Rang</span></div>
+        <div class="team-pill them"><span class="lbl">Them</span><b id="score-them">0</b><div class="pips" id="pips-them"></div></div>
+      </div>
+      <div class="tb-right">
+        <button id="mic" class="icon-btn" title="Mute / unmute">
+          <svg class="on" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M19 11a7 7 0 0 1-1.2 3.9l-1.5-1.5c.4-.7.7-1.5.7-2.4zm-4 .2L9 5.2V5a3 3 0 0 1 6 0zM4.3 3 3 4.3l6 6V11a3 3 0 0 0 4.4 2.7l1.6 1.6A5 5 0 0 1 7 11H5a7 7 0 0 0 6 6.9V21h2v-3.1a7 7 0 0 0 3.4-1.4l3.3 3.3 1.3-1.3z"/></svg>
+        </button>
+        <button id="cam" class="icon-btn" title="Camera on / off">
+          <svg class="on" viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M21 6.5l-4 4V7a1 1 0 0 0-1-1H9.8L21 17.2zM3.3 2 2 3.3 4.7 6H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12c.2 0 .4-.1.5-.2l3.2 3.2 1.3-1.3z"/></svg>
+        </button>
+        <button id="leave" class="icon-btn danger" title="Leave table">
+          <svg viewBox="0 0 24 24"><path d="M10 17l1.4-1.4L8.8 13H20v-2H8.8l2.6-2.6L10 7l-5 5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="room-main" class="room-main">
+      <div id="stage" class="stage">
+        <div class="table"><div class="felt"><div class="felt-mark">COURT PIECE<span>♠ ♥ ♣ ♦</span></div></div></div>
+        <div class="seat" data-pos="top"></div>
+        <div class="seat" data-pos="left"></div>
+        <div class="seat" data-pos="right"></div>
+        <div class="seat" data-pos="bottom"></div>
+        <div class="trick">
+          <div class="slot" data-pos="top"></div>
+          <div class="slot" data-pos="left"></div>
+          <div class="slot" data-pos="right"></div>
+          <div class="slot" data-pos="bottom"></div>
+        </div>
+        <div id="deck" class="deck"></div>
+        <div id="status"></div>
+        <div id="hand"></div>
+      </div>
+      <aside id="lobby" class="lobby hidden"></aside>
+    </main>
+  </section>
+
+  <div id="fx"></div>
+  <div id="modal" class="modal hidden"><div class="modal-body"></div></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <template id="seat-tpl">
+    <div class="tile">
+      <video autoplay playsinline></video>
+      <div class="avatar"></div>
+      <div class="badges"></div>
+    </div>
+    <div class="plate"><span class="name"></span><span class="meta"></span></div>
+    <div class="backs"></div>
+    <div class="seat-actions"></div>
+  </template>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
