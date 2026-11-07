@@ -251,6 +251,25 @@ setInterval(() => {
 // ---------- seats ----------
 $$('.seat').forEach((s) => s.append($('#seat-tpl').content.cloneNode(true)));
 
+// Browsers may refuse to autoplay unmuted media (e.g. auto-joining from an invite link
+// before any click). Retry on the next user interaction.
+let blockedPlayback = false;
+function playVideo(video) {
+  video.play().catch(() => {
+    if (blockedPlayback) return;
+    blockedPlayback = true;
+    toast('Tap anywhere to turn on sound and video');
+  });
+}
+const resumeMedia = () => {
+  if (!blockedPlayback) return;
+  blockedPlayback = false;
+  audioCtx?.resume().catch(() => {});
+  $$('.seat video').forEach((v) => { if (v.srcObject && v.paused) playVideo(v); });
+};
+document.addEventListener('pointerdown', resumeMedia, true);
+document.addEventListener('keydown', resumeMedia, true);
+
 function renderVideos() {
   if (!state) return;
   for (const pos of POS) {
@@ -261,9 +280,11 @@ function renderVideos() {
     let stream = null;
     if (s && seat === state.you.seat) stream = camOn ? localStream : null;
     else if (s) stream = streams.get(s.publicId) || null;
-    if (video.srcObject !== stream) video.srcObject = stream;
     video.muted = seat === state.you.seat;
-    const live = !!stream && stream.getVideoTracks().some((t) => t.readyState === 'live');
+    if (video.srcObject !== stream) video.srcObject = stream;
+    if (stream && video.paused) playVideo(video);
+    // Remote tracks are "muted" until frames actually arrive; show the avatar until then.
+    const live = !!stream && stream.getVideoTracks().some((t) => t.readyState === 'live' && !t.muted);
     box.classList.toggle('has-video', live);
     box.classList.toggle('mirror', seat === state.you.seat);
   }

@@ -14,42 +14,88 @@ const io = new Server(server, { maxHttpBufferSize: 64 * 1024 });
 const rooms = new RoomManager(io);
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.rooms.size }));
+app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.rooms.size, turn: hasTurn(cachedIce || staticIce()) }));
 
-// STUN works for most home networks; a TURN server is needed for strict NATs / mobile data.
-// Metered.ca provides free TURN with dynamic credentials via their API.
+// STUN works for many home networks; a TURN server is needed between different networks
+// with strict NATs (mobile data, offices, some ISPs). Metered.ca provides TURN.
+//
+// Metered has two kinds of key:
+//   METERED_API_KEY    - a credential's API key; GET /api/v1/turn/credentials?apiKey=... returns iceServers.
+//   METERED_SECRET_KEY - the account secret; it can't fetch iceServers directly, but it can create a
+//                        credential (POST /api/v1/turn/credential?secretKey=...) whose apiKey can.
+// Either works. With only the secret key we create a credential and reuse it until it expires.
+const ICE_TTL = 10 * 60 * 1000;           // refresh iceServers every 10 minutes
+const MINTED_TTL_S = 7 * 24 * 60 * 60;    // credentials we create live for a week
 let cachedIce = null;
 let cachedAt = 0;
-const ICE_TTL = 10 * 60 * 1000; // refresh every 10 minutes
+let mintedKey = null;
+let mintedUntil = 0;
+let iceInflight = null;
 
-app.get('/api/ice', async (_req, res) => {
-  const domain = process.env.METERED_DOMAIN;
-  const key = process.env.METERED_SECRET_KEY;
-  if (domain && key) {
-    if (!cachedIce || Date.now() - cachedAt > ICE_TTL) {
-      try {
-        const url = `https://${domain}/api/v1/turn/credentials?apiKey=${key}`;
-        const r = await fetch(url);
-        if (r.ok) {
-          cachedIce = await r.json();
-          cachedAt = Date.now();
-        }
-      } catch (e) {
-        console.error('Failed to fetch TURN credentials:', e.message);
-      }
-    }
-    if (cachedIce) return res.json({ iceServers: cachedIce });
+const hasTurn = (list) => Array.isArray(list)
+  && list.some((s) => [].concat(s?.urls || []).some((u) => /^turns?:/.test(u)));
+
+async function meteredIceServers(domain, apiKey) {
+  const r = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`);
+  const body = await r.json().catch(() => null);
+  if (!r.ok || !hasTurn(body)) throw new Error(`credentials ${r.status}: ${JSON.stringify(body).slice(0, 200)}`);
+  return body;
+}
+
+async function mintMeteredKey(domain, secretKey) {
+  if (mintedKey && Date.now() < mintedUntil) return mintedKey;
+  const r = await fetch(`https://${domain}/api/v1/turn/credential?secretKey=${encodeURIComponent(secretKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiryInSeconds: MINTED_TTL_S, label: 'court-piece' }),
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok || !body?.apiKey) throw new Error(`create credential ${r.status}: ${JSON.stringify(body).slice(0, 200)}`);
+  mintedKey = body.apiKey;
+  mintedUntil = Date.now() + (MINTED_TTL_S - 3600) * 1000;
+  return mintedKey;
+}
+
+async function loadMeteredIce() {
+  const domain = process.env.METERED_DOMAIN?.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const apiKey = process.env.METERED_API_KEY;
+  const secretKey = process.env.METERED_SECRET_KEY;
+  if (!domain || (!apiKey && !secretKey)) return null;
+  if (apiKey) {
+    try { return await meteredIceServers(domain, apiKey); } catch (e) { console.error('[turn] METERED_API_KEY failed:', e.message); }
   }
-  // Fallback: static TURN config or STUN-only.
-  const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+  if (secretKey) {
+    try {
+      return await meteredIceServers(domain, await mintMeteredKey(domain, secretKey));
+    } catch (e) {
+      mintedKey = null;
+      console.error('[turn] METERED_SECRET_KEY failed:', e.message);
+    }
+  }
+  return null;
+}
+
+function staticIce() {
+  const iceServers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
   if (process.env.TURN_URL) {
     iceServers.push({
-      urls: process.env.TURN_URL.split(','),
+      urls: process.env.TURN_URL.split(',').map((u) => u.trim()),
       username: process.env.TURN_USERNAME,
       credential: process.env.TURN_CREDENTIAL,
     });
   }
-  res.json({ iceServers });
+  return iceServers;
+}
+
+app.get('/api/ice', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!cachedIce || Date.now() - cachedAt > ICE_TTL) {
+    iceInflight ??= loadMeteredIce().finally(() => { iceInflight = null; });
+    const fresh = await iceInflight;
+    if (fresh) { cachedIce = fresh; cachedAt = Date.now(); }
+  }
+  // Serve the last good Metered list even if a refresh failed; otherwise static config.
+  res.json({ iceServers: cachedIce || staticIce() });
 });
 
 const cleanName = (n) => String(n || '').replace(/\s+/g, ' ').trim().slice(0, 20) || 'Player';

@@ -10,5 +10,7 @@ services:
         value: production
       - key: METERED_DOMAIN
         sync: false
+      - key: METERED_API_KEY
+        sync: false
       - key: METERED_SECRET_KEY
         sync: false
